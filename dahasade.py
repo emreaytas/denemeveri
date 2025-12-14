@@ -3,53 +3,62 @@
     https://colab.research.google.com/drive/1Xw3cvM9wF8uVdm5zDObg4s7xuW5JOkCV
 """
 
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_auc_score
+from datetime import datetime
+   
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score, StratifiedKFold
+from sklearn.ensemble import (RandomForestClassifier, GradientBoostingClassifier,
+                                ExtraTreesClassifier, AdaBoostClassifier, BaggingClassifier,
+                                VotingClassifier, StackingClassifier)
+from sklearn.linear_model import LogisticRegression, RidgeClassifier, SGDClassifier
+from sklearn.svm import SVC, LinearSVC
+from sklearn.naive_bayes import MultinomialNB, ComplementNB, BernoulliNB
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import LabelEncoder, StandardScaler, MinMaxScaler
+from sklearn.feature_selection import SelectKBest, chi2, mutual_info_classif, f_classif
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.utils.class_weight import compute_class_weight
+from sklearn.metrics import (classification_report, confusion_matrix, accuracy_score,
+                            precision_recall_fscore_support, f1_score)
+from sklearn.pipeline import Pipeline
+from scipy.sparse import hstack
+from scipy.optimize import minimize
+import re
+import warnings
+import time
+from collections import defaultdict
+
+import kagglehub
+from kagglehub import KaggleDatasetAdapter
+warnings.filterwarnings('ignore')
+print("Paketler yüklendi")
 
 randomstateee = 12
 testsizeee = 0.25
 ratiooo = 1.2
 
+    ######## csv açma ve kolon vs ayarlama önemli kısım
+df = pd.read_csv("C:\\Users\\emrea\\Desktop\\denemeveri\\train.csv")
+df = df.drop(columns=[df.columns[0],'Sensor8']) # 7 ve 8 aynı 8i düşürdüm geri getiririz duruma göre...
+df.head()
+df = df.drop(columns=['Date','Sensor1','Sensor6','Sensor5'])
+df['Device_ID'] = LabelEncoder().fit_transform(df['Device_ID']) # labelencoder kullandık.
+    #gelismis_korelasyon_haritasi(df)
+    #######
+df222 = df
 
-def denevekaydet(randomstateee, testsizeee, ratiooo):
-    from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_auc_score
-    from datetime import datetime
-   
-    from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report, confusion_matrix
-    import matplotlib.pyplot as plt
-    import pandas as pd
-    import numpy as np
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
-    from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score, StratifiedKFold
-    from sklearn.ensemble import (RandomForestClassifier, GradientBoostingClassifier,
-                                ExtraTreesClassifier, AdaBoostClassifier, BaggingClassifier,
-                                VotingClassifier, StackingClassifier)
-    from sklearn.linear_model import LogisticRegression, RidgeClassifier, SGDClassifier
-    from sklearn.svm import SVC, LinearSVC
-    from sklearn.naive_bayes import MultinomialNB, ComplementNB, BernoulliNB
-    from sklearn.neighbors import KNeighborsClassifier
-    from sklearn.tree import DecisionTreeClassifier
-    from sklearn.neural_network import MLPClassifier
-    from sklearn.preprocessing import LabelEncoder, StandardScaler, MinMaxScaler
-    from sklearn.feature_selection import SelectKBest, chi2, mutual_info_classif, f_classif
-    from sklearn.compose import ColumnTransformer
-    from sklearn.preprocessing import OneHotEncoder
-    from sklearn.utils.class_weight import compute_class_weight
-    from sklearn.metrics import (classification_report, confusion_matrix, accuracy_score,
-                            precision_recall_fscore_support, f1_score)
-    from sklearn.pipeline import Pipeline
-    from scipy.sparse import hstack
-    from scipy.optimize import minimize
-    import re
-    import warnings
-    import time
-    from collections import defaultdict
-
-    import kagglehub
-    from kagglehub import KaggleDatasetAdapter
-    warnings.filterwarnings('ignore')
-    print("Paketler yüklendi")
-
+def denevekaydet(randomstateee, testsizeee, ratiooo,df):
+    df = df222
     def veri_tipleri_analiz(df):
         """
         DataFrame'deki tüm kolonların veri tiplerini detaylı şekilde analiz eder.
@@ -355,14 +364,7 @@ def denevekaydet(randomstateee, testsizeee, ratiooo):
         return X_train, X_test, y_train, y_test
 
 
-    ######## csv açma ve kolon vs ayarlama önemli kısım
-    df = pd.read_csv("C:\\Users\\emrea\\Desktop\\denemeveri\\train.csv")
-    df = df.drop(columns=[df.columns[0],'Sensor8']) # 7 ve 8 aynı 8i düşürdüm geri getiririz duruma göre...
-    df.head()
-    df = df.drop(columns=['Date','Sensor1','Sensor6','Sensor5'])
-    df['Device_ID'] = LabelEncoder().fit_transform(df['Device_ID']) # labelencoder kullandık.
-    #gelismis_korelasyon_haritasi(df)
-    #######
+
 
 
 
@@ -1010,17 +1012,17 @@ def denevekaydet(randomstateee, testsizeee, ratiooo):
     # parametreleri dict olarak hazırla
     params = {'rs': randomstateee, 'ratio': ratiooo, 'ts': testsizeee}
 
-    model_performans_raporu(model1, X_test, y_test, "Random Forest", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
-    model_performans_raporu(model2, X_test, y_test, "XGBoost", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
-    model_performans_raporu(model3, X_test, y_test, "Gradient Boosting", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
-    model_performans_raporu(model4, X_test, y_test, "Logistic Regression", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
-    model_performans_raporu(model5, X_test, y_test, "SVM", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
-    model_performans_raporu(model6, X_test, y_test, "K-Nearest Neighbors", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
-    model_performans_raporu(model7, X_test, y_test, "Decision Tree", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
-    model_performans_raporu(model8, X_test, y_test, "AdaBoost", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
-    model_performans_raporu(model9, X_test, y_test, "Naive Bayes", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
-    model_performans_raporu(model10, X_test, y_test, "LightGBM", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
-    model_performans_raporu(model11, X_test, y_test, "CatBoost", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
+    model_performans_raporu(model1, X_test, y_test, "Random Forest", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.9, parametreler=params)
+    model_performans_raporu(model2, X_test, y_test, "XGBoost", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.9, parametreler=params)
+    model_performans_raporu(model3, X_test, y_test, "Gradient Boosting", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.9, parametreler=params)
+    model_performans_raporu(model4, X_test, y_test, "Logistic Regression", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.9, parametreler=params)
+    model_performans_raporu(model5, X_test, y_test, "SVM", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.9, parametreler=params)
+    model_performans_raporu(model6, X_test, y_test, "K-Nearest Neighbors", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.9, parametreler=params)
+    model_performans_raporu(model7, X_test, y_test, "Decision Tree", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.9, parametreler=params)
+    model_performans_raporu(model8, X_test, y_test, "AdaBoost", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.9, parametreler=params)
+    model_performans_raporu(model9, X_test, y_test, "Naive Bayes", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.9, parametreler=params)
+    model_performans_raporu(model10, X_test, y_test, "LightGBM", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.9, parametreler=params)
+    model_performans_raporu(model11, X_test, y_test, "CatBoost", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.9, parametreler=params)
 
 import numpy as np
 import numpy as np
@@ -1028,5 +1030,6 @@ import numpy as np
 for i in range(1, 101):                       
     for j in np.arange(1.0, 5.2, 0.1):       
         for k in np.arange(0.18, 0.31, 0.01):  
-            denevekaydet(randomstateee=i, ratiooo=round(j, 1), testsizeee=round(k, 2))
+            print(f"\n\n\n\n\n\n\n\n\n\n\n{i}---{j}---{k}\n\n\n\n\n\n\n\n\n\n\n")
+            denevekaydet(randomstateee=i, ratiooo=round(j, 1), testsizeee=round(k, 2),df=df222)
 
