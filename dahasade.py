@@ -361,7 +361,7 @@ def denevekaydet(randomstateee, testsizeee, ratiooo):
     df.head()
     df = df.drop(columns=['Date','Sensor1','Sensor6','Sensor5'])
     df['Device_ID'] = LabelEncoder().fit_transform(df['Device_ID']) # labelencoder kullandık.
-    gelismis_korelasyon_haritasi(df)
+    #gelismis_korelasyon_haritasi(df)
     #######
 
 
@@ -1018,5 +1018,11 @@ def denevekaydet(randomstateee, testsizeee, ratiooo):
     model_performans_raporu(model10, X_test, y_test, "LightGBM", kaydet=True, dosya_adi=dosya, append=True)
     model_performans_raporu(model11, X_test, y_test, "CatBoost", kaydet=True, dosya_adi=dosya, append=True)
 
-denevekaydet(randomstateee=randomstateee,testsizeee=testsizeee,ratiooo=ratiooo)
+import numpy as np
+
+for i in range(1, 101):                       
+    for j in np.arange(1.0, 5.2, 0.1):       
+        for k in np.arange(0.18, 0.31, 0.01):  
+            denevekaydet(randomstateee=i, ratiooo=j, testsizeee=k)
+
 
