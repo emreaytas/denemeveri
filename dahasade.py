@@ -495,8 +495,10 @@ def denevekaydet(randomstateee, testsizeee, ratiooo):
     print(tipler.to_string())
     
     
-    def model_performans_raporu(model, X_test, y_test, model_adi="Model", kaydet=False, dosya_adi=None, append=False, baslik_yaz=True):
-     
+    def model_performans_raporu(model, X_test, y_test, model_adi="Model", kaydet=False, dosya_adi=None, append=False, baslik_yaz=True, esik=0.9, parametreler=None):
+        from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_auc_score
+        from datetime import datetime
+
         # Tahminler
         y_pred = model.predict(X_test)
         y_pred_proba = model.predict_proba(X_test)[:, 1] if hasattr(model, 'predict_proba') else None
@@ -512,34 +514,33 @@ def denevekaydet(randomstateee, testsizeee, ratiooo):
         cm = confusion_matrix(y_test, y_pred)
         tn, fp, fn, tp = cm.ravel()
 
-        # Rapor oluştur
-        rapor_satirlari = []
-        
-        if baslik_yaz:
-            rapor_satirlari.append("=" * 120)
-            rapor_satirlari.append("")
-            rapor_satirlari.append(f"{'Model':<25} {'Accuracy':>10} {'Precision':>10} {'Recall':>10} {'F1-Score':>10} {'ROC-AUC':>10} {'TN':>7} {'FP':>7} {'FN':>7} {'TP':>7}")
-            rapor_satirlari.append("-" * 120)
+        # Tüm metrikler eşiğin üstünde mi?
+        hepsi_basarili = all([accuracy > esik, precision > esik, recall > esik, f1 > esik, roc_auc > esik])
 
-        # Model satırı
-        rapor_satirlari.append(f"{model_adi:<25} {accuracy:>10.4f} {precision:>10.4f} {recall:>10.4f} {f1:>10.4f} {roc_auc:>10.4f} {tn:>7} {fp:>7} {fn:>7} {tp:>7}")
+        # Rapor satırı (parametrelerle birlikte)
+        if parametreler:
+            rapor_satiri = f"{model_adi:<20} rs={parametreler['rs']:<3} ratio={parametreler['ratio']:<4} ts={parametreler['ts']:<5} | Acc={accuracy:.4f} Prec={precision:.4f} Rec={recall:.4f} F1={f1:.4f} AUC={roc_auc:.4f} | TN={tn} FP={fp} FN={fn} TP={tp}"
+        else:
+            rapor_satiri = f"{model_adi:<25} {accuracy:>10.4f} {precision:>10.4f} {recall:>10.4f} {f1:>10.4f} {roc_auc:>10.4f} {tn:>7} {fp:>7} {fn:>7} {tp:>7}"
 
-        rapor_metni = "\n".join(rapor_satirlari)
-        print(rapor_metni)
+        # Sadece başarılıysa yazdır
+        if hepsi_basarili:
+            print(f"[BASARILI] {rapor_satiri}")
 
-        # Kaydet
-        if kaydet:
-            if dosya_adi is None:
-                dosya_adi = f"model_karsilastirma_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-            
-            with open(dosya_adi, 'a' if append else 'w', encoding='utf-8') as f:
-                f.write(rapor_metni + "\n")
+            # Kaydet
+            if kaydet:
+                if dosya_adi is None:
+                    dosya_adi = "basarili_modeller.txt"
+                
+                with open(dosya_adi, 'a' if append else 'w', encoding='utf-8') as f:
+                    f.write(rapor_satiri + "\n")
 
         return {
             'accuracy': accuracy, 'precision': precision, 'recall': recall,
             'f1_score': f1, 'roc_auc': roc_auc, 'confusion_matrix': cm,
-            'tn': tn, 'fp': fp, 'fn': fn, 'tp': tp
+            'tn': tn, 'fp': fp, 'fn': fn, 'tp': tp, 'hepsi_basarili': hepsi_basarili
         }
+
 
 
     def train_and_evaluate(X_train, X_test, y_train, y_test):
@@ -1006,23 +1007,26 @@ def denevekaydet(randomstateee, testsizeee, ratiooo):
 
     dosya = f"{randomstateee}--{ratiooo}--{testsizeee}.txt"
 
-    model_performans_raporu(model1, X_test, y_test, "Random Forest", kaydet=True, dosya_adi=dosya, append=False)  # İlk model - yeni dosya
-    model_performans_raporu(model2, X_test, y_test, "XGBoost", kaydet=True, dosya_adi=dosya, append=True)
-    model_performans_raporu(model3, X_test, y_test, "Gradient Boosting", kaydet=True, dosya_adi=dosya, append=True)
-    model_performans_raporu(model4, X_test, y_test, "Logistic Regression", kaydet=True, dosya_adi=dosya, append=True)
-    model_performans_raporu(model5, X_test, y_test, "SVM", kaydet=True, dosya_adi=dosya, append=True)
-    model_performans_raporu(model6, X_test, y_test, "K-Nearest Neighbors", kaydet=True, dosya_adi=dosya, append=True)
-    model_performans_raporu(model7, X_test, y_test, "Decision Tree", kaydet=True, dosya_adi=dosya, append=True)
-    model_performans_raporu(model8, X_test, y_test, "AdaBoost", kaydet=True, dosya_adi=dosya, append=True)
-    model_performans_raporu(model9, X_test, y_test, "Naive Bayes", kaydet=True, dosya_adi=dosya, append=True)
-    model_performans_raporu(model10, X_test, y_test, "LightGBM", kaydet=True, dosya_adi=dosya, append=True)
-    model_performans_raporu(model11, X_test, y_test, "CatBoost", kaydet=True, dosya_adi=dosya, append=True)
+    # parametreleri dict olarak hazırla
+    params = {'rs': randomstateee, 'ratio': ratiooo, 'ts': testsizeee}
 
+    model_performans_raporu(model1, X_test, y_test, "Random Forest", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
+    model_performans_raporu(model2, X_test, y_test, "XGBoost", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
+    model_performans_raporu(model3, X_test, y_test, "Gradient Boosting", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
+    model_performans_raporu(model4, X_test, y_test, "Logistic Regression", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
+    model_performans_raporu(model5, X_test, y_test, "SVM", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
+    model_performans_raporu(model6, X_test, y_test, "K-Nearest Neighbors", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
+    model_performans_raporu(model7, X_test, y_test, "Decision Tree", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
+    model_performans_raporu(model8, X_test, y_test, "AdaBoost", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
+    model_performans_raporu(model9, X_test, y_test, "Naive Bayes", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
+    model_performans_raporu(model10, X_test, y_test, "LightGBM", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
+    model_performans_raporu(model11, X_test, y_test, "CatBoost", kaydet=True, dosya_adi=dosya, append=True, baslik_yaz=False, esik=0.85, parametreler=params)
+
+import numpy as np
 import numpy as np
 
 for i in range(1, 101):                       
     for j in np.arange(1.0, 5.2, 0.1):       
         for k in np.arange(0.18, 0.31, 0.01):  
-            denevekaydet(randomstateee=i, ratiooo=j, testsizeee=k)
-
+            denevekaydet(randomstateee=i, ratiooo=round(j, 1), testsizeee=round(k, 2))
 
